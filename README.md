@@ -2,7 +2,14 @@
 
 This repository contains my Springboard Bootcamp Capstone Project.
 
-## Project Ideas
+## Selected Project
+**Motor Archive**, a two mode car intelligence tool that helps people make better decisions when buying and owning a used car.
+
+- [View Project Proposal](./Project%20Proposal/Proposal.docx)
+- [View Project Idea](./ideas/motor-archive.md)
+
+
+## All Project Ideas
 
 Three project proposals are documented in the `/ideas` folder:
 
@@ -11,4 +18,5 @@ Three project proposals are documented in the `/ideas` folder:
 - [SkyWindow](./ideas/skywindow.md)
 
 ## Status
-Step 1 — Initial Project Ideas (pending mentor approval)
+Step 1 — Initial Project Ideas (Approved)
+Step 2 - Project Proposal (submitted, pending mentor approval)
