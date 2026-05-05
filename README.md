@@ -18,5 +18,5 @@ Three project proposals are documented in the `/ideas` folder:
 - [SkyWindow](./ideas/skywindow.md)
 
 ## Status
-Step 1, Initial Project Ideas (Approved)
-Step 2, Project Proposal (submitted, pending mentor approval)
+- Step 1, Initial Project Ideas (Approved)
+- Step 2, Project Proposal (submitted, pending mentor approval)
