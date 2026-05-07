@@ -20,20 +20,34 @@
 
 ## Project Goal
 
-Every car research tool available today solves one moment in isolation. Carfax covers accident history. KBB covers pricing. NHTSA covers safety ratings. None of them connect those signals into a plain-English answer to the question every used car buyer actually has: is this specific car, at this mileage, at this price, a good decision?
+Every car research tool available today solves one moment in isolation. 
+Carfax covers accident history. KBB covers pricing. NHTSA covers safety 
+ratings. None of them connect those signals into a plain-English answer 
+to the question every used car buyer actually has: is this specific car, 
+at this mileage, at this price, a good decision?
 
-Motor Archive is a two-mode car intelligence tool that follows the user across the full ownership lifecycle.
+Motor Archive is a two-mode car intelligence tool that follows the user 
+across the full ownership lifecycle.
 
-- **Buy Mode,** research before you buy. Paste any VIN or listing and get a risk verdict with clear reasoning, known failure patterns at this mileage, open recalls, and a pre-purchase checklist specific to this model.
-- **Own Mode,** diagnose after you buy. Save your car, enter a symptom or OBD error code, and get common causes, typical repair costs, and exactly what to tell the mechanic.
+- **Buy Mode,** research before you buy. Paste any VIN and get a risk 
+  verdict with clear reasoning, known failure patterns at this mileage, 
+  open recalls, and a pre-purchase checklist specific to this model. 
+  No account needed to run a lookup. Registration is only required to 
+  save a car or access Own Mode.
+- **Own Mode,** diagnose after you buy. Save your car, enter a symptom 
+  or OBD error code, and get common causes, typical repair costs, and 
+  exactly what to tell the mechanic.
 
-The core insight: no existing tool stays useful after you drive off the lot. Motor Archive does.
+The core insight: no existing tool stays useful after you drive off the 
+lot. Motor Archive does.
 
 ---
 
 ## Database Schema
 
-Four collections in MongoDB. Soft deletes used throughout to prevent orphaned records.
+Four collections in MongoDB. All field names use snake_case, which is 
+the standard naming convention for MongoDB. Soft deletes used throughout 
+to prevent orphaned records.
 
 ### Users
 
@@ -52,7 +66,7 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 | Field | Type | Notes |
 |---|---|---|
 | _id | ObjectId | Auto-generated |
-| user_id | ObjectId | Required, references users |
+| user_id | ObjectId | Required, references users collection |
 | vin | String | 17 characters, compound unique index with user_id |
 | make | String | From NHTSA decode |
 | model | String | From NHTSA decode |
@@ -69,8 +83,8 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 | Field | Type | Notes |
 |---|---|---|
 | _id | ObjectId | Auto-generated |
-| car_id | ObjectId | References cars |
-| user_id | ObjectId | References users |
+| car_id | ObjectId | References cars collection |
+| user_id | ObjectId | References users collection, null for anonymous lookups |
 | status | String | Enum: pending, complete, failed |
 | nhtsa_data | Object | Structured JSON with schema_version field |
 | ai_verdict | String | Plain-English risk summary |
@@ -84,8 +98,8 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 | Field | Type | Notes |
 |---|---|---|
 | _id | ObjectId | Auto-generated |
-| car_id | ObjectId | References cars |
-| user_id | ObjectId | References users |
+| car_id | ObjectId | References cars collection |
+| user_id | ObjectId | References users collection |
 | symptom | String | Minimum 15 characters, validated |
 | error_code | String | Optional, OBD format validated |
 | ai_response | String | Plain-English diagnosis |
@@ -102,29 +116,46 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 
 ### NHTSA API
 
-- API downtime, handled with exponential backoff retry (1s, 2s, 4s), pending verdict record saved, user notified when complete
-- Partial data, some models have sparse complaint records. Each data type tracked independently, missing data shown honestly rather than hiding empty sections
-- Large complaint volumes, some models have thousands of complaints. Backend summarizes top 50 most recent grouped by system category before sending to AI, preventing context window overflow
+- API downtime, handled with exponential backoff retry (1s, 2s, 4s), 
+  pending verdict record saved, user notified when complete
+- Partial data, some models have sparse complaint records. Each data 
+  type tracked independently, missing data shown honestly rather than 
+  hiding empty sections
+- Large complaint volumes, some models have thousands of complaints. 
+  Backend summarizes top 50 most recent grouped by system category 
+  before sending to AI, preventing context window overflow
 - VIN not found, clear message shown with manual entry fallback offered
-- Canadian or non-US vehicles, NHTSA covers US-market only, flagged clearly in the UI
+- Canadian or non-US vehicles, NHTSA covers US-market only, flagged 
+  clearly in the UI
 
 ### Anthropic API
 
-- API failure after NHTSA success, raw NHTSA data saved immediately. AI synthesis retried independently without re-hitting NHTSA
-- Vague or unhelpful AI response, responses under 100 words trigger an automatic retry with a more specific prompt before displaying to user
-- Low confidence diagnosis, confidence level stored and displayed visibly in UI, never hidden
-- Safety-critical symptoms, keywords like brakes not working or smoke from engine trigger an immediate safety warning before AI response, regardless of confidence level
-- Token costs, AI responses cached in database. Same VIN never triggers repeated API calls
+- API failure after NHTSA success, raw NHTSA data saved immediately. 
+  AI synthesis retried independently without re-hitting NHTSA
+- Vague or unhelpful AI response, responses under 100 words trigger 
+  an automatic retry with a more specific prompt before displaying 
+  to user
+- Low confidence diagnosis, confidence level stored and displayed 
+  visibly in UI, never hidden
+- Safety-critical symptoms, keywords like brakes not working or smoke 
+  from engine trigger an immediate safety warning before AI response, 
+  regardless of confidence level
+- Token costs, AI responses cached in database. Same VIN never triggers 
+  repeated API calls
 
 ### Sensitive Information to Secure
 
-- Passwords, bcrypt hashed with minimum 10 rounds before saving, never logged or stored plain
+- Passwords, bcrypt hashed with minimum 10 rounds before saving, 
+  never logged or stored plain
 - JWT secret, stored in environment variable, never committed to GitHub
 - MongoDB connection string, stored in environment variable
 - Anthropic API key, stored in environment variable
-- All environment variables, .env added to .gitignore before first commit, .env.example committed with placeholder values
-- Rate limiting on auth endpoints, 5 failed login attempts triggers 15 minute lockout
-- Input sanitization, all user inputs sanitized server-side before saving, XSS and injection attempts handled
+- All environment variables, .env added to .gitignore before first 
+  commit, .env.example committed with placeholder values
+- Rate limiting on auth endpoints, 5 failed login attempts triggers 
+  15 minute lockout
+- Input sanitization, all user inputs sanitized server-side before 
+  saving, XSS and injection attempts handled
 
 ---
 
@@ -132,47 +163,75 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 
 ### Authentication
 
-- User visits landing page, sees Sign Up and Log In options
-- Sign Up: name, email, password with strength validation. Verification email sent. Unverified accounts can browse but not save or look up
-- Log In: email and password, rate limited. JWT access token (15 min) plus refresh token (7 days) issued on success
-- Forgot Password: reset link emailed, expires in 1 hour, all sessions invalidated after reset
-- Silent token refresh in background, user redirected to login only if refresh token also expires
+- Landing page shows two options: try a VIN lookup (no account needed) 
+  or sign up
+- Anonymous users can run Buy Mode lookups freely. Results are shown 
+  but not saved
+- After seeing a verdict, anonymous users are prompted: "Save this car 
+  and track it over time, create a free account"
+- Sign Up: name, email, password with strength validation. Verification 
+  email sent
+- Log In: email and password, rate limited. JWT access token (15 min) 
+  plus refresh token (7 days) issued on success
+- Forgot Password: reset link emailed, expires in 1 hour, all sessions 
+  invalidated after reset
+- Own Mode requires a registered account, anonymous access not available
 
 ### Buy Mode
 
-- User enters or pastes a VIN, validated for 17 characters and no invalid characters (O, I, Q)
-- NHTSA decodes VIN, user confirms make, model, year. Manual entry offered if VIN not found
-- User enters listing mileage, age-based plausibility check flags unusual values
-- Duplicate detection: existing verdict for this VIN shown with timestamp, fresh lookup offered
-- Backend calls recalls, complaints, and safety ratings in parallel. Status tracked per call independently
-- AI synthesizes structured NHTSA summary into plain-English verdict with risk level and reasoning
-- Results page shows: risk level badge, verdict summary, recalls, complaints, pre-purchase checklist, data freshness timestamp
-- User can save the car or run another lookup. Saved cars appear on dashboard under Cars I'm Considering
+- Anonymous or logged-in user enters or pastes a VIN on the landing page
+- VIN validated for 17 characters and no invalid characters (O, I, Q)
+- NHTSA decodes VIN, user confirms make, model, year. Manual entry 
+  offered if VIN not found
+- User enters listing mileage, age-based plausibility check flags 
+  unusual values
+- Backend calls recalls, complaints, and safety ratings in parallel
+- AI synthesizes structured NHTSA summary into plain-English verdict 
+  with risk level and reasoning
+- Results page shows: risk level badge, verdict summary, recalls, 
+  complaints, pre-purchase checklist, data freshness timestamp
+- Anonymous users see a save prompt after results: "Create a free 
+  account to save this car and get ownership tools"
+- Logged-in users can save directly to their garage
 
 ### Own Mode, Adding a Car
 
-- User adds car via VIN lookup or manual entry (make, model, year, mileage)
-- Duplicate detection: if VIN already saved in Buy Mode, app offers to switch it to Own Mode preserving original verdict
+- Requires login, anonymous users redirected to sign up
+- User adds car via VIN lookup or manual entry (make, model, year, 
+  mileage)
+- Duplicate detection: if VIN already saved in Buy Mode, app offers 
+  to switch it to Own Mode preserving original verdict
 - Car appears on dashboard under My Cars
 
 ### Own Mode, Logging an Issue
 
-- User selects a saved car, car details shown prominently. Wrong car escape link always visible
-- Mileage staleness check: if mileage_updated_at over 30 days, prompt to update before continuing
-- User enters OBD error code (format validated) or describes symptom (minimum 15 characters)
-- Safety keyword detection: high-severity symptoms trigger immediate warning before diagnosis
-- Duplicate detection: similar symptom within 14 days prompts user to confirm if same issue or new occurrence
-- AI generates diagnosis with confidence level, severity indicator, cost range (independent shop vs dealership), and what to tell the mechanic
+- User selects a saved car, car details shown prominently. Wrong car 
+  escape link always visible
+- Mileage staleness check: if mileage_updated_at over 30 days, prompt 
+  to update before continuing
+- User enters OBD error code (format validated) or describes symptom 
+  (minimum 15 characters)
+- Safety keyword detection: high-severity symptoms trigger immediate 
+  warning before diagnosis
+- Duplicate detection: similar symptom within 14 days prompts user 
+  to confirm if same issue or new occurrence
+- AI generates diagnosis with confidence level, severity indicator, 
+  cost range, and what to tell the mechanic
 - User can mark as resolved with notes, or save and return later
-- Full issue history visible per car, most recent first, paginated after 10 entries
+- Full issue history visible per car, most recent first, paginated 
+  after 10 entries
 
 ### Dashboard
 
-- New users see empty state with two clear call-to-action buttons, no confusing blank table
-- Cars I'm Considering section shows up to 10 most recent Buy Mode saves with risk level badge
-- My Cars section shows owned cars with last issue date and Log an Issue button
-- I bought this button on any Buy Mode card switches it to Own Mode, prompts mileage confirmation
-- Pending verdicts older than 2 hours show failed state with Retry button
+- New users see empty state with two clear call-to-action buttons
+- Cars I'm Considering section shows up to 10 most recent Buy Mode 
+  saves with risk level badge
+- My Cars section shows owned cars with last issue date and Log an 
+  Issue button
+- I bought this button on any Buy Mode card switches it to Own Mode, 
+  prompts mileage confirmation
+- Pending verdicts older than 2 hours show failed state with Retry 
+  button
 
 ---
 
@@ -182,11 +241,12 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 
 | Feature | Type | Difficulty |
 |---|---|---|
+| Anonymous VIN lookup (no login required) | Fullstack | Medium |
 | User Authentication (sign up, log in, forgot password, email verification) | Fullstack | Medium |
 | VIN Lookup and NHTSA Vehicle Decoding | Fullstack | Medium |
 | Buy Mode, Risk Verdict with AI Synthesis | Fullstack | Hard |
 | Pre-Purchase Inspection Checklist (model-specific) | Fullstack | Medium |
-| Garage, Save and Manage Cars | Fullstack | Medium |
+| Garage, Save and Manage Cars (requires login) | Fullstack | Medium |
 | Own Mode, Issue Logging and AI Diagnosis | Fullstack | Hard |
 | Issue History and Resolution Tracking | Fullstack | Medium |
 
@@ -199,14 +259,22 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 | Share a Verdict (shareable link, expires in 7 days) | Fullstack | Medium |
 | Mechanic Mode (formatted issue history to share with mechanic) | Frontend | Easy |
 | Multi-Car Comparison in Buy Mode | Frontend | Medium |
+| V2, Image Recognition for Dashboard Warning Lights | Fullstack | Hard |
 
 ### What Makes This More Than a CRUD App
 
-- AI synthesis layer turns raw government data into plain-English verdicts with risk reasoning, not just data display
-- Model-specific failure pattern analysis at specific mileage thresholds, not generic advice
-- Adaptive diagnosis in Own Mode adjusts based on car details, current mileage, and issue history
-- Persistent ownership record across the full car lifecycle, from pre-purchase research to years of ownership
-- Safety-critical detection layer that overrides normal flow for dangerous symptoms
+- Anonymous VIN lookup lowers the barrier to entry, users see value 
+  before being asked to register
+- AI synthesis layer turns raw government data into plain-English 
+  verdicts with risk reasoning, not just data display
+- Model-specific failure pattern analysis at specific mileage 
+  thresholds, not generic advice
+- Adaptive diagnosis in Own Mode adjusts based on car details, current 
+  mileage, and issue history
+- Persistent ownership record across the full car lifecycle, from 
+  pre-purchase research to years of ownership
+- Safety-critical detection layer that overrides normal flow for 
+  dangerous symptoms
 
 ---
 
@@ -231,7 +299,8 @@ Four collections in MongoDB. Soft deletes used throughout to prevent orphaned re
 
 ## Task Breakdown and Timeline
 
-Estimated 52-66 hours total across 8 weeks, sitting within the 45-65 hour capstone guideline with a buffer week for reality.
+Estimated 52-66 hours total across 8 weeks, within the 45-65 hour 
+capstone guideline with a buffer week for reality.
 
 ### Week 1, Foundation (8-10 hrs)
 
@@ -243,7 +312,8 @@ Estimated 52-66 hours total across 8 weeks, sitting within the 45-65 hour capsto
 | Connect frontend to backend with a test API call | Fullstack | Medium | 2 |
 | Set up .env, .gitignore, .env.example, ESLint, Prettier | Backend | Easy | 1 |
 
-End of week goal: frontend loads, backend runs locally, database connected, test API call works end to end.
+End of week goal: frontend loads, backend runs locally, database 
+connected, test API call works end to end.
 
 ### Week 2, Authentication (8-10 hrs)
 
@@ -255,19 +325,21 @@ End of week goal: frontend loads, backend runs locally, database connected, test
 | Sign up and log in UI in React | Frontend | Medium | 2 |
 | AuthContext to manage user state across the app | Fullstack | Medium | 2 |
 
-End of week goal: user can register, log in, log out. Protected routes redirect unauthenticated users.
+End of week goal: user can register, log in, log out. Protected routes 
+redirect unauthenticated users.
 
 ### Week 3, VIN Lookup and NHTSA Data (8-10 hrs)
 
 | Task | Type | Difficulty | Hours |
 |---|---|---|---|
-| NHTSA vPIC decode endpoint on backend | Backend | Medium | 2 |
-| NHTSA recalls, complaints, safety ratings endpoints | Backend | Hard | 3 |
-| VIN input UI with validation and error states | Frontend | Medium | 2 |
+| Anonymous VIN lookup endpoint, no auth required | Backend | Medium | 2 |
+| NHTSA vPIC decode, recalls, complaints, safety ratings | Backend | Hard | 3 |
+| VIN input UI on landing page, no login gate | Frontend | Medium | 2 |
 | Display decoded car details for user confirmation | Frontend | Easy | 1 |
 | Error handling for NHTSA failures and partial data | Backend | Medium | 2 |
 
-End of week goal: user can enter a VIN, app decodes it, pulls NHTSA data, handles failures gracefully.
+End of week goal: anyone can enter a VIN and get NHTSA data without 
+logging in.
 
 ### Week 4, AI Verdict and Results (8-10 hrs)
 
@@ -276,9 +348,10 @@ End of week goal: user can enter a VIN, app decodes it, pulls NHTSA data, handle
 | Anthropic API integration on backend | Backend | Hard | 3 |
 | Verdict generation prompt with structured output | Backend | Hard | 3 |
 | Results page UI: risk level badge, verdict, checklist | Frontend | Medium | 3 |
-| Save verdict to database, duplicate detection | Fullstack | Medium | 2 |
+| Save prompt for anonymous users after verdict shown | Frontend | Easy | 1 |
 
-End of week goal: full Buy Mode works end to end. VIN in, verdict out, saved to database.
+End of week goal: full Buy Mode works end to end for anonymous users. 
+VIN in, verdict out.
 
 ### Week 5, Garage and Own Mode Setup (8-10 hrs)
 
@@ -289,7 +362,8 @@ End of week goal: full Buy Mode works end to end. VIN in, verdict out, saved to 
 | Own Mode car addition flow (VIN and manual entry) | Fullstack | Medium | 2 |
 | Issue log model and backend endpoints | Backend | Medium | 2 |
 
-End of week goal: user can save cars, view garage, add owned cars, dashboard shows both sections.
+End of week goal: logged-in users can save cars, view garage, add 
+owned cars.
 
 ### Week 6, Issue Logging and History (6-8 hrs)
 
@@ -300,7 +374,8 @@ End of week goal: user can save cars, view garage, add owned cars, dashboard sho
 | Diagnosis results UI: severity, cost breakdown, mechanic language | Frontend | Medium | 2 |
 | Issue history view per car with resolution tracking | Frontend | Easy | 2 |
 
-End of week goal: full Own Mode works end to end. Symptom in, diagnosis out, history visible.
+End of week goal: full Own Mode works end to end. Symptom in, 
+diagnosis out, history visible.
 
 ### Week 7, Polish and Deployment (6-8 hrs)
 
@@ -312,11 +387,10 @@ End of week goal: full Own Mode works end to end. Symptom in, diagnosis out, his
 | Deploy frontend to Vercel | Frontend | Easy | 1 |
 | Connect Atlas to Render, test end to end in production | Fullstack | Medium | 2 |
 
-End of week goal: app deployed and working in production. Share link ready for mentor review.
+End of week goal: app deployed and working in production. Share link 
+ready for mentor review.
 
 ### Week 8, Buffer and Stretch Goals
-
-This week exists for two reasons. Things always take longer than expected, and stretch goals if everything went smoothly.
 
 - Recall alerts for owned cars (Backend, Hard)
 - Share a verdict link (Fullstack, Medium)
