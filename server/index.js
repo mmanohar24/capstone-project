@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
+const authMiddleware = require('./middleware/auth')
 
 // Load env file
 dotenv.config();
@@ -21,10 +22,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 
 // Define Routes
-app.get('/', (req, res) => {
+app.get('/api/protected', authMiddleware, (req, res) => {
     res.json(
         {
-            message: "Motor Archive API is running!!"
+            message: `Hello ${req.user.userId}, you are authenticated!`
         }
     );
 });
