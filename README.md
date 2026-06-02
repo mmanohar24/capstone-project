@@ -20,3 +20,4 @@ Three project proposals are documented in the `/ideas` folder:
 ## Status
 - Step 1, Initial Project Ideas (Approved)
 - Step 2, Project Proposal (submitted, pending mentor approval)
+- Step 3, User Flow Diagrams: https://www.figma.com/board/LkywUSbS3yOPkrwJsS9u6F/Motor-Archive?node-id=0-1&t=SpNXdO3aJ5uIJWdG-1
