@@ -3,7 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+
 const authRoutes = require('./routes/auth');
+const carsRoutes = require("./routes/cars");
 const authMiddleware = require('./middleware/auth')
 
 // Load env file
@@ -20,6 +22,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/cars', carsRoutes);
 
 // Define Routes
 app.get('/api/protected', authMiddleware, (req, res) => {

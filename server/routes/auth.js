@@ -110,7 +110,7 @@ router.post('/login', async (req, res) => {
             }
         )
 
-        res.status(201).json(
+        res.status(200).json(
             {
                 message: "Logged in successfully",
                 token,
