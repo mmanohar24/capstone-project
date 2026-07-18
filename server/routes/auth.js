@@ -13,6 +13,7 @@ router.post('/signup', async (req, res) => {
         // Check all fields are present
         if (!name || !email || !password) {
             return res.status(400).json({ message: "All fields are required!" });
+            // system should be able to inform user what fields have not been inputed.
         }
 
         // Check password length
