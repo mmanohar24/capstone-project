@@ -11,3 +11,7 @@ server/node_modules/
 
 # Build output
 dist/
+
+#Client
+client/node_modules/
+client/dist/
