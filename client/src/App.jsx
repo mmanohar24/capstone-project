@@ -1,10 +1,10 @@
-import './App.css'
+import Router from './Router';
 
 function App() {
 
-  return(
-    <div className='min-h-screen bg-gray-100 flex items-center justify-center'>
-      <h1 className='text-4xl font-bold text-blue-600'> Motor Archive </h1>
+  return (
+    <div>
+      <Router />
     </div>
   )
 
