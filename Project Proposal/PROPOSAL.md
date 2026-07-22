@@ -84,7 +84,6 @@ to prevent orphaned records.
 |---|---|---|
 | _id | ObjectId | Auto-generated |
 | car_id | ObjectId | References cars collection |
-| user_id | ObjectId | References users collection, null for anonymous lookups |
 | status | String | Enum: pending, complete, failed |
 | nhtsa_data | Object | Structured JSON with schema_version field |
 | ai_verdict | String | Plain-English risk summary |
@@ -93,7 +92,7 @@ to prevent orphaned records.
 | created_at | Date | Auto-set |
 | nhtsa_fetched_at | Date | Timestamp of NHTSA call for freshness display |
 
-### Issue Logs (Own Mode)
+### Symptoms  (Own Mode)
 
 | Field | Type | Notes |
 |---|---|---|
@@ -106,8 +105,8 @@ to prevent orphaned records.
 | confidence_level | String | Enum: high, medium, low, shown in UI |
 | estimated_cost_range | Object | Split: independent shop vs dealership |
 | severity | String | Enum: safe, monitor, do not drive |
-| resolved | Boolean | Default false |
-| resolution_notes | String | Optional, user-entered after fix |
+| status | String | Enum: open, fixed |
+| updated_at | Date | Auto-updated when record changes |
 | created_at | Date | Auto-set |
 
 ---
@@ -203,7 +202,7 @@ to prevent orphaned records.
   to switch it to Own Mode preserving original verdict
 - Car appears on dashboard under My Cars
 
-### Own Mode, Logging an Issue
+### Own Mode, Logging a Symptom
 
 - User selects a saved car, car details shown prominently. Wrong car 
   escape link always visible
@@ -217,8 +216,8 @@ to prevent orphaned records.
   to confirm if same issue or new occurrence
 - AI generates diagnosis with confidence level, severity indicator, 
   cost range, and what to tell the mechanic
-- User can mark as resolved with notes, or save and return later
-- Full issue history visible per car, most recent first, paginated 
+- User can mark as fixed, or save and return later
+- Full symptom history visible per car, most recent first, paginated 
   after 10 entries
 
 ### Dashboard
@@ -226,8 +225,8 @@ to prevent orphaned records.
 - New users see empty state with two clear call-to-action buttons
 - Cars I'm Considering section shows up to 10 most recent Buy Mode 
   saves with risk level badge
-- My Cars section shows owned cars with last issue date and Log an 
-  Issue button
+- My Cars section shows owned cars with last issue date and Log a 
+  Symptom button
 - I bought this button on any Buy Mode card switches it to Own Mode, 
   prompts mileage confirmation
 - Pending verdicts older than 2 hours show failed state with Retry 
@@ -247,8 +246,8 @@ to prevent orphaned records.
 | Buy Mode, Risk Verdict with AI Synthesis | Fullstack | Hard |
 | Pre-Purchase Inspection Checklist (model-specific) | Fullstack | Medium |
 | Garage, Save and Manage Cars (requires login) | Fullstack | Medium |
-| Own Mode, Issue Logging and AI Diagnosis | Fullstack | Hard |
-| Issue History and Resolution Tracking | Fullstack | Medium |
+| Own Mode, Symptom Logging and AI Diagnosis | Fullstack | Hard |
+| Symptom History and Status Tracking | Fullstack | Medium |
 
 ### Stretch Goals
 
@@ -257,7 +256,7 @@ to prevent orphaned records.
 | Price vs Market Analysis (is the listing price fair?) | Fullstack | Hard |
 | Recall Alerts for Owned Cars (email when new recall issued) | Backend | Hard |
 | Share a Verdict (shareable link, expires in 7 days) | Fullstack | Medium |
-| Mechanic Mode (formatted issue history to share with mechanic) | Frontend | Easy |
+| Mechanic Mode (formatted symptom history to share with mechanic) | Frontend | Easy |
 | Multi-Car Comparison in Buy Mode | Frontend | Medium |
 | V2, Image Recognition for Dashboard Warning Lights | Fullstack | Hard |
 
@@ -270,7 +269,7 @@ to prevent orphaned records.
 - Model-specific failure pattern analysis at specific mileage 
   thresholds, not generic advice
 - Adaptive diagnosis in Own Mode adjusts based on car details, current 
-  mileage, and issue history
+  mileage, and symptom history
 - Persistent ownership record across the full car lifecycle, from 
   pre-purchase research to years of ownership
 - Safety-critical detection layer that overrides normal flow for 
@@ -360,19 +359,19 @@ VIN in, verdict out.
 | Car model, garage endpoints, mode switching | Backend | Medium | 2 |
 | Dashboard UI: Cars I'm Considering and My Cars sections | Frontend | Medium | 3 |
 | Own Mode car addition flow (VIN and manual entry) | Fullstack | Medium | 2 |
-| Issue log model and backend endpoints | Backend | Medium | 2 |
+| Symptom model and backend endpoints | Backend | Medium | 2 |
 
 End of week goal: logged-in users can save cars, view garage, add 
 owned cars.
 
-### Week 6, Issue Logging and History (6-8 hrs)
+### Week 6, Symptom Logging and History (6-8 hrs)
 
 | Task | Type | Difficulty | Hours |
 |---|---|---|---|
-| Issue logging UI: symptom or OBD entry with validation | Frontend | Medium | 2 |
+| Symptom logging UI: symptom or OBD entry with validation | Frontend | Medium | 2 |
 | AI diagnosis endpoint with safety keyword detection | Backend | Hard | 3 |
 | Diagnosis results UI: severity, cost breakdown, mechanic language | Frontend | Medium | 2 |
-| Issue history view per car with resolution tracking | Frontend | Easy | 2 |
+| Symptom history view per car with status tracking | Frontend | Easy | 2 |
 
 End of week goal: full Own Mode works end to end. Symptom in, 
 diagnosis out, history visible.
@@ -406,7 +405,7 @@ ready for mentor review.
 | 3 | VIN and NHTSA | 8-10 |
 | 4 | AI Verdict | 8-10 |
 | 5 | Garage and Own Mode | 8-10 |
-| 6 | Issue Logging | 6-8 |
+| 6 | Symptom Logging | 6-8 |
 | 7 | Polish and Deploy | 6-8 |
 | 8 | Buffer and Stretch | Flexible |
 | **Total** | | **52-66 hours** |
